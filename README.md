@@ -18,7 +18,7 @@ Este é um simples **scanner de portas TCP** desenvolvido em Python. Ele permite
 
 1. **Instale as dependências** (caso ainda não tenha o `tabulate` instalado):  
    ```
-   pip install requirements.txt
+   pip install -r requirements.txt
    ```
 
 2. **Execute o script:**  
