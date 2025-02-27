@@ -24,20 +24,57 @@ lock = threading.Lock()
 
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+def idSysOp(banner):
+    """Tenta identificar o sistema operacional com base no banner capturado."""
+    banner = banner.lower() 
+
+    if "ubuntu" in banner or "debian" in banner:
+        return "Linux (Ubuntu/Debian)"
+    elif "centos" in banner or "red hat" in banner:
+        return "Linux (CentOS/Red Hat)"
+    elif "microsoft-iis" in banner:
+        return "Windows (IIS Web Server)"
+    elif "apache" in banner:
+        return "Linux (Apache Web Server)"
+    elif "nginx" in banner:
+        return "Linux (Nginx Web Server)"
+    elif "windows" in banner:
+        return "Windows"
+    elif "freebsd" in banner:
+        return "FreeBSD"
+    elif "openbsd" in banner:
+        return "OpenBSD"
+    else:
+        return "Sistema operacional desconhecido"
+
+# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
 def scanPort(ip, port, open_ports, lock):
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(10)
         result = sock.connect_ex((ip, port))
+        banner = ""
         
         if result == 0:
             try:
                 service = socket.getservbyport(port)
             except:
                 service = PORTS.get(port, "Desconhecido")
-            print(f"\n[ABERTA] Porta {port} ({service})")
+        
+            try:
+                banner = sock.recv(1024).decode().strip() 
+            except:
+                banner = "Nenhum banner capturado"
+
+            SO = idSysOp(banner)
+
+        
+        
+            print(f"\n[ABERTA] Porta {port} ({service}) - Banner: {banner}")
             with lock:
-                open_ports.append((port, service))
+                open_ports.append((port, service, banner, SO))
+        
         else:
             if result in [socket.errno.EACCES, socket.errno.ECONNREFUSED]:
                 print(f"\n[FECHADA] Porta {port}")
@@ -45,6 +82,7 @@ def scanPort(ip, port, open_ports, lock):
                 print(f"\n[FILTRADA] Porta {port}")
             else:
                 print(f"\n[ERRO] Porta {port} -> Código de erro: {result}")
+        
         sock.close()
     except socket.timeout:
         print(f"\n[FILTRADA] Porta {port} -> Tempo limite excedido")
@@ -70,9 +108,8 @@ def scanHost(host, start_port, end_port):
 
     print("-=" * 30)
     print("\n Portas abertas:")
-    table = [[port, service] for port, service in open_ports]
-    print(tabulate(table, headers=["Porta", "Serviço"], tablefmt="grid"))
-
+    table = [[port, service, banner, sistema] for port, service, banner, sistema in open_ports]  # 🆕 Adicionando SO
+    print(tabulate(table, headers=["Porta", "Serviço", "Banner", "SO"], tablefmt="grid"))  # 🆕 Atualizando cabeçalhos
 
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
